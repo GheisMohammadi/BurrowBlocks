@@ -1,0 +1,15 @@
+[grpc]
+  name = "Gallactic"
+  host = "http://104.248.149.118"
+  port = "20001"
+
+[database]
+  type = "Postgre"
+  dbname = "HubbleScan"
+  host = "localhost"
+  port = 5432
+  user = "postgres"
+  password = "123456"
+
+[app]
+  "checking interval" = 100
