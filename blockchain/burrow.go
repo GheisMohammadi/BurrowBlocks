@@ -240,7 +240,7 @@ func (g *Burrow) GetBlockInfo(height uint64) (*BlockInfo, error) {
 	inf.NumTxs = numTxs
 	inf.TotalTxs = totalTxs
 	inf.BlockHash = fmt.Sprintf("%v", env.Result.BlockMeta.ID.Hash)
-	inf.LastBlockHash = "" //fmt.Sprintf("%v", env.Result.Block.Header[""])
+	//inf.LastBlockHash = "" //fmt.Sprintf("%v", env.Result.Block.Header[""])
 	inf.DataHash = fmt.Sprintf("%v", env.Result.Block.Header["data_hash"])
 	inf.ValidatorsHash = fmt.Sprintf("%v", env.Result.Block.Header["validators_hash"])
 	inf.NextValidatorsHash = fmt.Sprintf("%v", env.Result.Block.Header["next_validators_hash"])
@@ -417,7 +417,7 @@ func (g *Burrow) GetBlocks(from uint64, to uint64) ([]BlockInfo, error) {
 		inf.NumTxs = numTxs
 		inf.TotalTxs = totalTxs
 		inf.BlockHash = fmt.Sprintf("%v", meta.ID.Hash)
-		inf.LastBlockHash = "" //fmt.Sprintf("%v", meta.Header[""])
+		//inf.LastBlockHash = "" //fmt.Sprintf("%v", meta.Header[""])
 		inf.DataHash = fmt.Sprintf("%v", meta.Header["data_hash"])
 		inf.ValidatorsHash = fmt.Sprintf("%v", meta.Header["validators_hash"])
 		inf.NextValidatorsHash = fmt.Sprintf("%v", meta.Header["next_validators_hash"])

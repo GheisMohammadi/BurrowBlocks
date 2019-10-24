@@ -27,7 +27,7 @@ type BlockInfo struct {
 	NumTxs   int64
 	TotalTxs int64
 	// prev block info
-	LastBlockHash string
+	//LastBlockHash string
 	// hashes of block data
 	LastCommitHash string
 	DataHash       string
@@ -48,7 +48,7 @@ type Block struct {
 	Hash          string
 	ChainID       string
 	Time          time.Time
-	LastBlockHash string
+	//LastBlockHash string
 	TxCounts      int64
 }
 
