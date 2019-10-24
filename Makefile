@@ -11,7 +11,8 @@ GOTOOLS = \
 	github.com/gogo/protobuf/gogoproto \
 	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway \
 	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger \
-	github.com/lib/pq
+	github.com/lib/pq \
+	github.com/gorilla/mux
 
 PROTOPATH = -I=. -I=${GOPATH}/src -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf:. -I=${GOPATH}/src/github.com/gallactic/gallactic/rpc/grpc/proto3 -I=${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 #--proto_path=${GOPATH}/src:${GOPATH}/src/github.com/gogo/protobuf/protobuf:.

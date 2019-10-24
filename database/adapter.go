@@ -26,4 +26,5 @@ type Adapter interface {
 	UpdateTx(id int, b *hsBC.Transaction) error
 	GetTx(hash string) (*hsBC.Transaction, error)
 	GetTXsTableLastID() (uint64, error)
+
 }

@@ -11,5 +11,9 @@
   user = "postgres"
   password = "123456"
 
+[restful]
+  host = ""
+  port = "8080"
+  
 [app]
-  "checking interval" = 100
+  "checking interval" = 1000

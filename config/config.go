@@ -13,9 +13,10 @@ import (
 const Config_File string = "config.toml"
 
 type Config struct {
-	GRPC     *GRPCConfig     `toml:"grpc"`
-	DataBase *DataBaseConfig `toml:"database"`
-	App      *AppConfig      `toml:"app"`
+	GRPC          *GRPCConfig          `toml:"grpc"`
+	DataBase      *DataBaseConfig      `toml:"database"`
+	RestfulServer *RestfulServerConfig `toml:restful`
+	App           *AppConfig           `toml:"app"`
 }
 
 type GRPCConfig struct {
@@ -31,6 +32,11 @@ type DataBaseConfig struct {
 	Port     int    `toml:"port"`
 	User     string `toml:"user"`
 	Password string `toml:"password"`
+}
+
+type RestfulServerConfig struct {
+	Host string `toml:"host"`
+	Port string `toml:"port"`
 }
 
 type AppConfig struct {
@@ -53,6 +59,13 @@ func DefaultDataBaseConfig() *DataBaseConfig {
 		Port:     5432,
 		User:     "postgres",
 		Password: "123456",
+	}
+}
+
+func DefaultRestfulServerConfig() *RestfulServerConfig {
+	return &RestfulServerConfig{
+		Host: "localhost",
+		Port: "8080",
 	}
 }
 
@@ -101,9 +114,10 @@ func (conf *Config) SaveToFile(file string) error {
 
 func DefaultConfig() *Config {
 	return &Config{
-		GRPC:     DefaultGRPCConfig(),
-		DataBase: DefaultDataBaseConfig(),
-		App:      DefaultAppConfig(),
+		GRPC:          DefaultGRPCConfig(),
+		DataBase:      DefaultDataBaseConfig(),
+		RestfulServer: DefaultRestfulServerConfig(),
+		App:           DefaultAppConfig(),
 	}
 }
 
