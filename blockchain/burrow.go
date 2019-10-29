@@ -783,3 +783,38 @@ func (g *Burrow) GetTXs(height uint64) ([]Transaction, error) {
 	return txs, nil
 
 }
+
+//GetNodes returns all nodes status
+func (g *Burrow) GetNodes() ([]Peer, error) {
+
+	url := fmt.Sprintf(g.Domain + "/network")
+
+	responseData := g.GetReply(url)
+
+	type Network struct {
+		ThisNode  map[string]interface{} `json:"ThisNode"`
+		Listening bool                   `json:"listening"`
+		Listeners string                 `json:"listeners"`
+		NPeers    int64                  `json:"n_peers"`
+		Peers     []Peer                 `json:"peers"`
+	}
+
+	type NodesStatus struct {
+		Jsonrpc string  `json:"jsonrpc"`
+		ID      string  `json:"id"`
+		Result  Network `json:"result"`
+	}
+
+	//var env JsonMsg
+	var env NodesStatus
+	bytes := []byte(string(responseData))
+	if err := json.Unmarshal(bytes, &env); err != nil {
+		println("error on get nodes status response: ", err.Error())
+		return nil, err
+	}
+
+	println("num peers: ", env.Result.NPeers)
+	println("num peers: ", len(env.Result.Peers))
+
+	return env.Result.Peers, nil
+}

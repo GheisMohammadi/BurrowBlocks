@@ -13,6 +13,7 @@ import (
 
 var explorerEngine ex.Explorer
 var dbAdapter db.Postgre
+var bcAdapter bc.Burrow
 var gConfig *config.Config
 
 func main() {
@@ -22,7 +23,7 @@ func main() {
 
 	//Prepairing Restful API...
 	go func() {
-		rest.InitServer(gConfig, &dbAdapter)
+		rest.InitServer(gConfig, &dbAdapter, &bcAdapter)
 	}()
 
 	//Sync with BlockChain...
@@ -33,7 +34,7 @@ func main() {
 //Init initializes engine
 func Init() {
 	gConfig, _ = config.LoadConfigFile(true)
-	bcAdapter := bc.Burrow{Config: gConfig}
+	bcAdapter = bc.Burrow{Config: gConfig}
 	dbAdapter = db.Postgre{Config: gConfig}
 	explorerEngine = ex.Explorer{BCAdapter: &bcAdapter, DBAdapter: &dbAdapter, Config: gConfig}
 

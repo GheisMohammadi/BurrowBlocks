@@ -1,5 +1,5 @@
 [grpc]
-  name = "Gallactic"
+  name = "Burrow"
   host = "http://104.248.149.118"
   port = "20001"
 

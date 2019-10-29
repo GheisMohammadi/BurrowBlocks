@@ -110,7 +110,7 @@ func (obe *Postgre) GetAccountsTableLastID() (uint64, error) {
 //InsertBlock add a block in database
 func (obe *Postgre) InsertBlock(b *hsBC.BlockInfo) error {
 	sqlStatement := `INSERT INTO blocks (height, hash, chainID, time, txcounts)
-	VALUES ($1, $2, $3, $4, $5, $6)
+	VALUES ($1, $2, $3, $4, $5)
 	RETURNING height`
 	id := 0
 	row := obe.ObjDB.QueryRow(sqlStatement, b.Height, b.BlockHash, b.ChainID, b.Time, b.NumTxs)

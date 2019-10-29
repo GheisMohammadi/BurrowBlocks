@@ -44,12 +44,12 @@ type BlockInfo struct {
 
 //Block struct
 type Block struct {
-	Height        int64
-	Hash          string
-	ChainID       string
-	Time          time.Time
+	Height  int64
+	Hash    string
+	ChainID string
+	Time    time.Time
 	//LastBlockHash string
-	TxCounts      int64
+	TxCounts int64
 }
 
 //Transaction struct
@@ -64,6 +64,23 @@ type Transaction struct {
 	Fee      uint64
 	Data     string
 	Sequence uint64
+}
+
+//NodeConnectionStatus for get status of connection
+type NodeConnectionStatus struct {
+	Duration    int64                    `json:"Duration"`
+	SendMonitor map[string]interface{}   `json:"SendMonitor"`
+	RecvMonitor map[string]interface{}   `json:"RecvMonitor"`
+	Channels    []map[string]interface{} `json:"Channels"`
+	RemoteIP    string                   `json:"remote_ip"`
+}
+
+//Peer in network response for staus of node
+type Peer struct {
+	NodeInfo         map[string]interface{} `json:"node_info"`
+	IsOutbound       bool                   `json:"is_outbound"`
+	ConnectionStatus NodeConnectionStatus   `json:"connection_status"`
+	RemoteIP         string                 `json:"remote_ip"`
 }
 
 //Adapter for data base
@@ -85,4 +102,6 @@ type Adapter interface {
 	GetTXsCount(height uint64) int
 	GetTx(height uint64, hash []byte) (*Transaction, error)
 	GetTXs(height uint64) ([]Transaction, error)
+
+	GetNodes() ([]Peer, error)
 }
