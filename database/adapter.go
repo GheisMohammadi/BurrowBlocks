@@ -13,6 +13,8 @@ type Adapter interface {
 	InsertAccount(acc *hsBC.Account) error
 	UpdateAccount(id int, acc *hsBC.Account) error
 	GetAccount(id int) (*hsBC.Account, error)
+	GetAccountByAddress(address string) (*hsBC.Account, error)
+	GetAccountFromTransactions(address string) ([]hsBC.Transaction, error)
 	GetAccountsTableLastID() (uint64, error)
 
 	//Blocks Handling

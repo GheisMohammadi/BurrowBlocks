@@ -49,12 +49,12 @@ func SyncLoop() {
 
 	for {
 
-		go func() {
-			errUpdate := explorerEngine.Update()
-			if errUpdate != nil {
-				println("Updating engine error: ", errUpdate.Error())
-			}
-		}()
+		//go func() {
+		errUpdate := explorerEngine.Update()
+		if errUpdate != nil {
+			println("Updating engine error: ", errUpdate.Error())
+		}
+		//}()
 		time.Sleep(interval * time.Millisecond)
 
 	}

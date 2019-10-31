@@ -813,8 +813,5 @@ func (g *Burrow) GetNodes() ([]Peer, error) {
 		return nil, err
 	}
 
-	println("num peers: ", env.Result.NPeers)
-	println("num peers: ", len(env.Result.Peers))
-
 	return env.Result.Peers, nil
 }

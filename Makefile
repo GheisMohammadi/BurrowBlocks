@@ -40,6 +40,11 @@ tools:
 #	--protoc $(PROTOPATH) --gogo_out=plugins=grpc:$(HUBBLE) ./proto3/blockchain.proto
 
 ########################################
+
+deploy:
+	sshpass -p "kk.53*(F&-\d(BN<" scp /home/gheis/goApps/src/github.com/BurrowBlocks/BurrowBlocks  root@178.128.124.224:~/burrowblocksapi/burrowblocks
+	sshpass -p "kk.53*(F&-\d(BN<" scp /home/gheis/goApps/src/github.com/BurrowBlocks/config.toml  root@178.128.124.224:~/burrowblocksapi/config.toml
+
 ### Formatting, linting, and vetting
 fmt:
 	@go fmt ./...
@@ -47,10 +52,10 @@ fmt:
 ########################################
 ### building
 build:
-	@go build main.go
+	@go build BurrowBlocks.go
 
 run:
-	@go run main.go
+	@go run BurrowBlocks.go
 
 # To avoid unintended conflicts with file names, always add to .PHONY
 # unless there is a reason not to.

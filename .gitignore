@@ -12,4 +12,4 @@ tests/config.toml
 vendor/*
 
 # builds
-main
+BurrowBlocks

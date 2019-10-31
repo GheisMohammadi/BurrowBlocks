@@ -15,7 +15,7 @@ const Config_File string = "config.toml"
 type Config struct {
 	GRPC          *GRPCConfig          `toml:"grpc"`
 	DataBase      *DataBaseConfig      `toml:"database"`
-	RestfulServer *RestfulServerConfig `toml:restful`
+	RestfulServer *RestfulServerConfig `toml:"restful"`
 	App           *AppConfig           `toml:"app"`
 }
 

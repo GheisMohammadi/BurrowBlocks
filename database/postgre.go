@@ -90,6 +90,49 @@ func (obe *Postgre) GetAccount(id int) (*hsBC.Account, error) {
 	}
 }
 
+//GetAccountByAddress finds account in db and returns its data
+func (obe *Postgre) GetAccountByAddress(address string) (*hsBC.Account, error) {
+	sqlStatement := `SELECT * FROM accounts 
+					 WHERE address=$1;`
+	acc := &hsBC.Account{Address: "", Balance: 0.0, Permission: "", Sequence: 0, Code: ""}
+	row := obe.ObjDB.QueryRow(sqlStatement, address)
+	err := row.Scan(&acc.Address, &acc.ID, &acc.Balance, &acc.Permission, &acc.Sequence, &acc.Code)
+	switch err {
+	case sql.ErrNoRows:
+		return nil, err
+	case nil:
+		return acc, nil
+	default:
+		return nil, err
+	}
+}
+
+//GetAccountFromTransactions finds accounts in db.transactions using address and returns its data
+func (obe *Postgre) GetAccountFromTransactions(address string) ([]hsBC.Transaction, error) {
+	sqlStatement := `SELECT block_id,txhash,fee,gas_limit,data,addr_from,addr_to,amount,tx_type FROM transactions 
+					 WHERE addr_from=$1 OR addr_to=$1;`
+
+	rows, errGetTxs := obe.ObjDB.Query(sqlStatement, address)
+	defer rows.Close()
+
+	if errGetTxs != nil {
+		return nil, errGetTxs
+	}
+
+	txs := make([]hsBC.Transaction, 0)
+	for rows.Next() {
+
+		var txn hsBC.Transaction
+		if err := rows.Scan(&txn.BlockID, &txn.Hash, &txn.Fee, &txn.GasLimit, &txn.Data, &txn.From, &txn.To, &txn.Amount, &txn.Type); err != nil {
+			return nil, err
+		}
+
+		txs = append(txs, txn)
+	}
+
+	return txs, nil
+}
+
 //GetAccountsTableLastID returns last block number
 func (obe *Postgre) GetAccountsTableLastID() (uint64, error) {
 	sqlStatement := `SELECT coalesce(MAX(id), 0) as max FROM accounts;`
@@ -127,10 +170,19 @@ func (obe *Postgre) UpdateBlock(id int, b *hsBC.Block) error {
 	return nil
 }
 
-//GetBlock returns a block
+//GetBlock returns a block details
 func (obe *Postgre) GetBlock(id int) (*hsBC.Block, error) {
-	//TODO:
-	return nil, nil
+	sqlStatement := `SELECT height, hash, chainID, time, txcounts FROM blocks 
+					 WHERE height=$1;`
+
+	var b hsBC.Block
+	row := obe.ObjDB.QueryRow(sqlStatement, id)
+	err := row.Scan(&b.Height, &b.Hash, &b.ChainID, &b.Time, &b.TxCounts)
+	if err != nil {
+		return nil, err
+	}
+
+	return &b, nil
 }
 
 //GetBlocksTableLastID returns last block number
@@ -146,6 +198,23 @@ func (obe *Postgre) GetBlocksTableLastID() (uint64, error) {
 		return 0, nil
 	case nil:
 		return LastID, nil
+	default:
+		return 0, err
+	}
+}
+
+//GetBlocksCount returns num blocks saved in db
+func (obe *Postgre) GetBlocksCount() (uint64, error) {
+	sqlStatement := `SELECT COUNT(*) as count FROM blocks`
+
+	row := obe.ObjDB.QueryRow(sqlStatement)
+	var TxsCount uint64
+	err := row.Scan(&TxsCount)
+	switch err {
+	case sql.ErrNoRows:
+		return 0, nil
+	case nil:
+		return TxsCount, nil
 	default:
 		return 0, err
 	}
@@ -187,7 +256,11 @@ func (obe *Postgre) GetTx(hash string) (*hsBC.Transaction, error) {
 	sqlStatement := `SELECT block_id,txhash,fee,gas_limit,data,addr_from,addr_to,amount,tx_type FROM transactions
 					 WHERE txhash=$1;`
 	var tx hsBC.Transaction
-	obe.ObjDB.QueryRow(sqlStatement, hash).Scan(&tx.BlockID, &tx.Hash, &tx.Fee, &tx.GasLimit, &tx.Data, &tx.From, &tx.To, &tx.Amount, &tx.Type)
+	errGetTx := obe.ObjDB.QueryRow(sqlStatement, hash).Scan(&tx.BlockID, &tx.Hash, &tx.Fee, &tx.GasLimit, &tx.Data, &tx.From, &tx.To, &tx.Amount, &tx.Type)
+
+	if errGetTx != nil {
+		return nil, errGetTx
+	}
 
 	return &tx, nil
 }
@@ -207,4 +280,48 @@ func (obe *Postgre) GetTXsTableLastID() (uint64, error) {
 	default:
 		return 0, err
 	}
+}
+
+//GetTxsCount returns num transaction saved in db
+func (obe *Postgre) GetTxsCount() (uint64, error) {
+	sqlStatement := `SELECT COUNT(*) as count FROM transactions`
+
+	row := obe.ObjDB.QueryRow(sqlStatement)
+	var TxsCount uint64
+	err := row.Scan(&TxsCount)
+	switch err {
+	case sql.ErrNoRows:
+		return 0, nil
+	case nil:
+		return TxsCount, nil
+	default:
+		return 0, err
+	}
+}
+
+//GetLatestTxs returns latest transactions by count
+func (obe *Postgre) GetLatestTxs(count uint64) ([]hsBC.Transaction, error) {
+
+	sqlStatement := `SELECT block_id,txhash,fee,gas_limit,data,addr_from,addr_to,amount,tx_type FROM transactions
+	ORDER BY block_id DESC LIMIT $1;`
+
+	rows, errGetLatestTxs := obe.ObjDB.Query(sqlStatement, count)
+	defer rows.Close()
+
+	if errGetLatestTxs != nil {
+		return nil, errGetLatestTxs
+	}
+
+	txs := make([]hsBC.Transaction, 0)
+	for rows.Next() {
+
+		var txn hsBC.Transaction
+		if err := rows.Scan(&txn.BlockID, &txn.Hash, &txn.Fee, &txn.GasLimit, &txn.Data, &txn.From, &txn.To, &txn.Amount, &txn.Type); err != nil {
+			return nil, err
+		}
+
+		txs = append(txs, txn)
+	}
+
+	return txs, nil
 }
