@@ -22,8 +22,8 @@ type Burrow struct {
 	client *http.Client
 }
 
-//CreateGRPCClient creates a client for communicating with gallactic blockchain
-func (g *Burrow) CreateGRPCClient() error {
+//CreateClient creates a client for communicating with gallactic blockchain
+func (g *Burrow) CreateClient() error {
 	var connURL string
 	connURL = g.Config.GRPC.URL + ":" + g.Config.GRPC.Port
 	g.Domain = connURL

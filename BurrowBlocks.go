@@ -23,6 +23,7 @@ func main() {
 
 	//Prepairing Restful API...
 	go func() {
+		//defer dbAdapter.Disconnect()
 		rest.InitServer(gConfig, &dbAdapter, &bcAdapter)
 	}()
 
@@ -46,6 +47,7 @@ func SyncLoop() {
 
 	interval := time.Duration(gConfig.App.CheckingInterval)
 	println("syncing every", interval, "miliseconds...")
+	defer dbAdapter.Disconnect()
 
 	for {
 

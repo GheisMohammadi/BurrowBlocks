@@ -130,6 +130,10 @@ func (obe *Postgre) GetAccountFromTransactions(address string) ([]hsBC.Transacti
 		txs = append(txs, txn)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return txs, nil
 }
 
@@ -321,6 +325,10 @@ func (obe *Postgre) GetLatestTxs(count uint64) ([]hsBC.Transaction, error) {
 		}
 
 		txs = append(txs, txn)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return txs, nil

@@ -21,7 +21,7 @@ type Explorer struct {
 func (e *Explorer) Init() error {
 	//connect to gallactic blockchain by gRPC
 	bcAdapter := e.BCAdapter
-	clientErr := bcAdapter.CreateGRPCClient()
+	clientErr := bcAdapter.CreateClient()
 	if clientErr == nil {
 		println("Blockchain client created successfully!")
 	} else {
@@ -42,31 +42,28 @@ func (e *Explorer) Init() error {
 
 //Update to sync
 func (e *Explorer) Update() error {
+	//update db if need
 	return e.UpdateAll()
 }
 
 //UpdateAll to Sync database with blockchain
 func (e *Explorer) UpdateAll() error {
 
-	//defer dbAdapter.Disconnect()
-	bcAdapter := e.BCAdapter
-	dbAdapter := e.DBAdapter
-
 	//Sync data with blockchain
-	updateErr := bcAdapter.Update()
+	updateErr := e.BCAdapter.Update()
 	if updateErr != nil {
 		return updateErr
 	}
 
 	//Get current height of last block
-	currentHeight, getLastHeightErr := bcAdapter.GetBlocksLastHeight()
+	currentHeight, getLastHeightErr := e.BCAdapter.GetBlocksLastHeight()
 	if getLastHeightErr != nil {
 		println("error on reading last block id: " + getLastHeightErr.Error())
 		return getLastHeightErr
 	}
 
 	//Get last block ID that is saved
-	lastBlockIDInDB, getLastIDError := dbAdapter.GetBlocksTableLastID()
+	lastBlockIDInDB, getLastIDError := e.DBAdapter.GetBlocksTableLastID()
 	if getLastIDError != nil {
 		println("error on reading last block id from db: " + getLastIDError.Error())
 		lastBlockIDInDB = 0
@@ -103,8 +100,8 @@ func (e *Explorer) UpdateAll() error {
 				endIndex = currentHeight
 			}
 
-			blocks, _ := bcAdapter.GetBlocks(startIndex, endIndex)
-			savingErr := e.saveBlocksInDB(blocks, bcAdapter, dbAdapter)
+			blocks, _ := e.BCAdapter.GetBlocks(startIndex, endIndex)
+			savingErr := e.saveBlocksInDB(blocks, e.BCAdapter, e.DBAdapter)
 			if savingErr != nil {
 				println("error on saving blocks in db: " + savingErr.Error())
 				return savingErr

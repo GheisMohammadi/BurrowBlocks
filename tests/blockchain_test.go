@@ -13,7 +13,7 @@ func TestBlockChain(t *testing.T) {
 	gConfig, _ := config.LoadConfigFile(true)
 	bc := bc.Gallactic{Config: gConfig}
 
-	clientErr := bc.CreateGRPCClient()
+	clientErr := bc.CreateClient()
 	require.NoError(t, clientErr)
 
 	updateErr := bc.Update()

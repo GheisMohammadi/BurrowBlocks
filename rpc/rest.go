@@ -52,8 +52,10 @@ func InitServer(configObject *config.Config, dbObject *db.Postgre, bcObject *bc.
 
 	handler := c.Handler(router)
 
-	url := configuration.RestfulServer.Host + ":" + configuration.RestfulServer.Port
+	url := configObject.RestfulServer.Host + ":" + configObject.RestfulServer.Port
+	println("Rest server is listening from " + url + "...")
 	http.ListenAndServe(url, handler)
+
 }
 
 func showVersion(w http.ResponseWriter, r *http.Request) {
@@ -253,11 +255,11 @@ func getLatestTxs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(txs)>0 {
+	if len(txs) > 0 {
 		res.ErrorNumber = 0
 		res.ErrorDescription = "ok"
 		res.Result["txs"] = txs
-	}else{
+	} else {
 		res.ErrorNumber = 1
 		res.ErrorDescription = "Not Found!"
 		res.Result["txs"] = ""

@@ -85,7 +85,7 @@ type Peer struct {
 
 //Adapter for data base
 type Adapter interface {
-	CreateGRPCClient() error
+	CreateClient() error
 
 	Update() error
 
