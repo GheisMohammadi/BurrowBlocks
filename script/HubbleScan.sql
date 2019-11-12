@@ -16,34 +16,6 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
-ALTER TABLE ONLY public.transactions DROP CONSTRAINT transactions_pkey;
-ALTER TABLE ONLY public.accounts DROP CONSTRAINT accounts_pkey;
-ALTER TABLE public.transactions ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE public.accounts ALTER COLUMN id DROP DEFAULT;
-DROP SEQUENCE public.transactions_id_seq;
-DROP TABLE public.transactions;
-DROP TABLE public.blocks;
-DROP SEQUENCE public.blocks_id_seq;
-DROP SEQUENCE public.accounts_id_seq;
-DROP TABLE public.accounts;
-DROP EXTENSION plpgsql;
-DROP SCHEMA public;
---
--- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
---
-
-CREATE SCHEMA public;
-
-
-ALTER SCHEMA public OWNER TO postgres;
-
---
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: postgres
---
-
-COMMENT ON SCHEMA public IS 'standard public schema';
-
-
 --
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
 --
@@ -172,6 +144,33 @@ ALTER SEQUENCE public.transactions_id_seq OWNED BY public.transactions.id;
 
 
 --
+-- Name: useraccounts_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.useraccounts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.useraccounts_id_seq OWNER TO postgres;
+
+--
+-- Name: useraccounts; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.useraccounts (
+    id bigint DEFAULT nextval('public.useraccounts_id_seq'::regclass) NOT NULL,
+    address character varying(256) NOT NULL,
+    num_txs bigint DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.useraccounts OWNER TO postgres;
+
+--
 -- Name: accounts id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -199,13 +198,6 @@ ALTER TABLE ONLY public.accounts
 
 ALTER TABLE ONLY public.transactions
     ADD CONSTRAINT transactions_pkey PRIMARY KEY (id);
-
-
---
--- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
---
-
-GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
 --
