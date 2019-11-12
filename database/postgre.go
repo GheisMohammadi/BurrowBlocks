@@ -235,6 +235,21 @@ func (obe *Postgre) InsertTx(b *hsBC.Transaction) error {
 	if err != nil {
 		return err
 	}
+
+	if b.From != "" {
+		err = obe.InsertOrAddTxToUserAccount(b.From)
+		if err != nil {
+			return err
+		}
+	}
+
+	if b.To != "" {
+		err = obe.InsertOrAddTxToUserAccount(b.To)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -332,4 +347,119 @@ func (obe *Postgre) GetLatestTxs(count uint64) ([]hsBC.Transaction, error) {
 	}
 
 	return txs, nil
+}
+
+//GetAccountsCount returns number of user accounts
+func (obe *Postgre) GetAccountsCount() (uint64, error) {
+
+	sqlStatement := `SELECT COUNT(*) as count FROM useraccounts`
+
+	row := obe.ObjDB.QueryRow(sqlStatement)
+	var UserAccsCount uint64
+	err := row.Scan(&UserAccsCount)
+	switch err {
+	case sql.ErrNoRows:
+		return 0, nil
+	case nil:
+		return UserAccsCount, nil
+	default:
+		return 0, err
+	}
+}
+
+//GetAccounts returns all account of users
+func (obe *Postgre) GetAccounts(fromID uint64, toID uint64) ([]UserAccount, error) {
+
+	sqlStatement := `SELECT * FROM useraccounts 
+	WHERE id>=$1 AND id<=$2;`
+
+	rows, errGetUserAccs := obe.ObjDB.Query(sqlStatement, fromID, toID)
+	//err := row.Scan(&acc.Address, &acc.ID, &acc.Address, &acc.NumTxs)
+
+	defer rows.Close()
+
+	if errGetUserAccs != nil {
+		return nil, errGetUserAccs
+	}
+
+	accs := make([]UserAccount, 0)
+	for rows.Next() {
+
+		var acc UserAccount
+		if err := rows.Scan(&acc.ID, &acc.Address, &acc.NumTxs); err != nil {
+			return nil, err
+		}
+
+		accs = append(accs, acc)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return accs, nil
+}
+
+//InsertUserAccount add a unique user account in database if it not exist
+func (obe *Postgre) InsertUserAccount(address string, numtxs uint64) error {
+
+	sqlStatement := `INSERT INTO useraccounts (address, num_txs)
+	VALUES ($1, $2)
+	RETURNING id`
+
+	id := 0
+	row := obe.ObjDB.QueryRow(sqlStatement, address, numtxs)
+	err := row.Scan(&id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//GetUserAccount returns a user account details
+func (obe *Postgre) GetUserAccount(address string) (*UserAccount, error) {
+	sqlStatement := `SELECT id, address, num_txs FROM useraccounts
+					 WHERE address=$1;`
+	var acc UserAccount
+	errGetAcc := obe.ObjDB.QueryRow(sqlStatement, address).Scan(&acc.ID, &acc.Address, &acc.NumTxs)
+
+	if errGetAcc != nil {
+		return nil, errGetAcc
+	}
+
+	return &acc, nil
+}
+
+//UpdateUserAccount modifies all fields for selected user account
+func (obe *Postgre) UpdateUserAccount(address string, numtxs uint64) error {
+	sqlStatement := `UPDATE useraccounts
+				SET num_txs = $2
+				WHERE address = $1
+				RETURNING id;`
+	var retID int
+	err := obe.ObjDB.QueryRow(sqlStatement, address, numtxs).Scan(&retID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//InsertOrAddTxToUserAccount inserts new account if not exist or add one to num_txs
+func (obe *Postgre) InsertOrAddTxToUserAccount(address string) error {
+
+	acc, errGetAcc := obe.GetUserAccount(address)
+	if errGetAcc != nil && errGetAcc != sql.ErrNoRows {
+		return errGetAcc
+	}
+
+	var err error
+	if errGetAcc == sql.ErrNoRows {
+		err = obe.InsertUserAccount(address, 1)
+	} else {
+		err = obe.UpdateUserAccount(address, acc.NumTxs+1)
+	}
+
+	return err
 }

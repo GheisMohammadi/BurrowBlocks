@@ -4,6 +4,14 @@ import (
 	hsBC "github.com/BurrowBlocks/blockchain"
 )
 
+//UserAccount defines all user accounts
+type UserAccount struct {
+	ID      uint64
+	Address string
+	NumTxs  uint64
+	Txs     []hsBC.Transaction
+}
+
 //Adapter for data base
 type Adapter interface {
 	Connect() error
@@ -29,4 +37,12 @@ type Adapter interface {
 	GetTx(hash string) (*hsBC.Transaction, error)
 	GetTXsTableLastID() (uint64, error)
 
+	//InsertUserAccount add a unique user account in database if it not exist
+	InsertUserAccount(address string, numtxs uint64) error
+	//GetUserAccount returns a user account details
+	GetUserAccount(address string) (*UserAccount, error)
+	//UpdateUserAccount modifies all fields for selected user account
+	UpdateUserAccount(address string, numtxs uint64) error
+	//InsertOrAddTxToUserAccount inserts new account if not exist or add one to num_txs
+	InsertOrAddTxToUserAccount(address string) error
 }

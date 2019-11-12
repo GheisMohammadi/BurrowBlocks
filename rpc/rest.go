@@ -36,6 +36,8 @@ func InitServer(configObject *config.Config, dbObject *db.Postgre, bcObject *bc.
 	router.HandleFunc("/api/v1/info", showVersion)
 	router.HandleFunc("/api/v1/gethash/{hash}", getHash).Methods("GET")
 	router.HandleFunc("/api/v1/getblock/{id}", getBlock).Methods("GET")
+	router.HandleFunc("/api/v1/accountscount", getAccountsCount).Methods("GET")
+	router.HandleFunc("/api/v1/accounts/{from}/{to}", getAccounts).Methods("GET")
 	router.HandleFunc("/api/v1/getaccount/{address}", getAccount).Methods("GET")
 	router.HandleFunc("/api/v1/getaccounttxs/{address}", getAccountTxs).Methods("GET")
 	router.HandleFunc("/api/v1/nodes", getNodesStatus).Methods("GET")
@@ -156,6 +158,58 @@ func getBlock(w http.ResponseWriter, r *http.Request) {
 	res.ErrorNumber = 0
 	res.ErrorDescription = "ok"
 	res.Result["details"] = block
+
+	json.NewEncoder(w).Encode(res)
+}
+
+func getAccountsCount(w http.ResponseWriter, r *http.Request) {
+
+	var res Response
+	res.Result = make(map[string]interface{})
+
+	count, errGetAccountsCount := dbAdapter.GetAccountsCount()
+
+	if errGetAccountsCount != nil {
+		res.ErrorNumber = 1
+		res.ErrorDescription = "can't get number of accounts: " + errGetAccountsCount.Error()
+		res.Result["num_accs"] = "0"
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	res.ErrorNumber = 0
+	res.ErrorDescription = "ok"
+	res.Result["num_accs"] = strconv.FormatUint(count, 10)
+
+	json.NewEncoder(w).Encode(res)
+}
+
+func getAccounts(w http.ResponseWriter, r *http.Request) {
+
+	strFromID := mux.Vars(r)["from"]
+	strToID := mux.Vars(r)["to"]
+
+	fromID, _ := strconv.Atoi(strFromID)
+	toID, _ := strconv.Atoi(strToID)
+
+	var res Response
+	res.Result = make(map[string]interface{})
+
+	accs, errGetAccounts := dbAdapter.GetAccounts(uint64(fromID), uint64(toID))
+
+	if errGetAccounts != nil {
+		res.ErrorNumber = 1
+		res.ErrorDescription = "can't get accounts: " + errGetAccounts.Error()
+		res.Result["num_accs"] = "0"
+		res.Result["accs"] = ""
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	res.ErrorNumber = 0
+	res.ErrorDescription = "ok"
+	res.Result["num_accs"] = strconv.FormatUint(uint64(len(accs)), 10)
+	res.Result["accs"] = accs
 
 	json.NewEncoder(w).Encode(res)
 }
