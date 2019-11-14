@@ -39,7 +39,8 @@ func InitServer(configObject *config.Config, dbObject *db.Postgre, bcObject *bc.
 	router.HandleFunc("/api/v1/accountscount", getAccountsCount).Methods("GET")
 	router.HandleFunc("/api/v1/accounts/{from}/{to}", getAccounts).Methods("GET")
 	router.HandleFunc("/api/v1/getaccount/{address}", getAccount).Methods("GET")
-	router.HandleFunc("/api/v1/getaccounttxs/{address}", getAccountTxs).Methods("GET")
+	router.HandleFunc("/api/v1/getaccountalltxs/{address}", getAccountAllTxs).Methods("GET")
+	router.HandleFunc("/api/v1/getaccounttxs/{address}/{minid}/{maxid}", getAccountTxs).Methods("GET")
 	router.HandleFunc("/api/v1/nodes", getNodesStatus).Methods("GET")
 	router.HandleFunc("/api/v1/blockscount", getBlocksCount).Methods("GET")
 	router.HandleFunc("/api/v1/txscount", getTxsCount).Methods("GET")
@@ -238,14 +239,52 @@ func getAccount(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func getAccountTxs(w http.ResponseWriter, r *http.Request) {
+func getAccountAllTxs(w http.ResponseWriter, r *http.Request) {
 
 	address := mux.Vars(r)["address"]
 
 	var res Response
 	res.Result = make(map[string]interface{})
 
-	txs, errGetAccountTxs := dbAdapter.GetAccountFromTransactions(address)
+	txs, errGetAccountTxs := dbAdapter.GetAccountAllTransactions(address)
+
+	if errGetAccountTxs != nil {
+		res.ErrorNumber = 1
+		res.ErrorDescription = "can't get account: " + errGetAccountTxs.Error()
+		res.Result["txs"] = ""
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	if len(txs) > 0 {
+		res.ErrorNumber = 0
+		res.ErrorDescription = "ok"
+		res.Result["txs"] = txs
+	} else {
+		res.ErrorNumber = 1
+		res.ErrorDescription = "Not Found!"
+		res.Result["txs"] = ""
+	}
+
+	json.NewEncoder(w).Encode(res)
+}
+
+func getAccountTxs(w http.ResponseWriter, r *http.Request) {
+
+	address := mux.Vars(r)["address"]
+	minIDStr := mux.Vars(r)["minid"]
+	maxIDStr := mux.Vars(r)["maxid"]
+
+	s, _ := strconv.Atoi(minIDStr)
+	minID := uint64(s)
+
+	e, _ := strconv.Atoi(maxIDStr)
+	maxID := uint64(e)
+
+	var res Response
+	res.Result = make(map[string]interface{})
+
+	txs, errGetAccountTxs := dbAdapter.GetAccountTransactions(address,minID,maxID)
 
 	if errGetAccountTxs != nil {
 		res.ErrorNumber = 1

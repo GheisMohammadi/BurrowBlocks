@@ -22,7 +22,8 @@ type Adapter interface {
 	UpdateAccount(id int, acc *hsBC.Account) error
 	GetAccount(id int) (*hsBC.Account, error)
 	GetAccountByAddress(address string) (*hsBC.Account, error)
-	GetAccountFromTransactions(address string) ([]hsBC.Transaction, error)
+	GetAccountAllTransactions(address string) ([]hsBC.Transaction, error)
+	GetAccountTransactions(address string,minID uint64,maxID uint64) ([]hsBC.Transaction, error)
 	GetAccountsTableLastID() (uint64, error)
 
 	//Blocks Handling

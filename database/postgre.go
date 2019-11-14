@@ -108,7 +108,7 @@ func (obe *Postgre) GetAccountByAddress(address string) (*hsBC.Account, error) {
 }
 
 //GetAccountFromTransactions finds accounts in db.transactions using address and returns its data
-func (obe *Postgre) GetAccountFromTransactions(address string) ([]hsBC.Transaction, error) {
+func (obe *Postgre) GetAccountAllTransactions(address string) ([]hsBC.Transaction, error) {
 	sqlStatement := `SELECT block_id,txhash,fee,gas_limit,data,addr_from,addr_to,amount,tx_type FROM transactions 
 					 WHERE addr_from=$1 OR addr_to=$1;`
 
@@ -124,6 +124,43 @@ func (obe *Postgre) GetAccountFromTransactions(address string) ([]hsBC.Transacti
 
 		var txn hsBC.Transaction
 		if err := rows.Scan(&txn.BlockID, &txn.Hash, &txn.Fee, &txn.GasLimit, &txn.Data, &txn.From, &txn.To, &txn.Amount, &txn.Type); err != nil {
+			return nil, err
+		}
+
+		txs = append(txs, txn)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return txs, nil
+}
+
+//GetAccountTransactions finds transactions using address and min and max ID
+func (obe *Postgre) GetAccountTransactions(address string, minID uint64, maxID uint64) ([]hsBC.Transaction, error) {
+
+	sqlStatement :=  `SELECT * FROM 
+					 (
+					 SELECT ROW_NUMBER () OVER (ORDER BY block_id) as txid,block_id,txhash,fee,gas_limit,data,addr_from,addr_to,amount,tx_type FROM transactions 
+										  WHERE addr_from=$1 OR addr_to=$1
+					 )
+					 x WHERE txid>=$2 AND txid<=$3;`
+
+	rows, errGetTxs := obe.ObjDB.Query(sqlStatement, address, minID, maxID)
+	defer rows.Close()
+
+	if errGetTxs != nil {
+		return nil, errGetTxs
+	}
+
+	txs := make([]hsBC.Transaction, 0)
+	for rows.Next() {
+
+		var txn hsBC.Transaction
+		var id uint64
+
+		if err := rows.Scan(&id, &txn.BlockID, &txn.Hash, &txn.Fee, &txn.GasLimit, &txn.Data, &txn.From, &txn.To, &txn.Amount, &txn.Type); err != nil {
 			return nil, err
 		}
 
