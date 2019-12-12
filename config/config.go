@@ -46,8 +46,8 @@ type AppConfig struct {
 func DefaultGRPCConfig() *GRPCConfig {
 	return &GRPCConfig{
 		Name: "Hyperledger Burrow",
-		URL:  "68.183.183.19",
-		Port: "50052",
+		URL:  "http://104.248.149.118",
+		Port: "20001",
 	}
 }
 
@@ -64,7 +64,7 @@ func DefaultDataBaseConfig() *DataBaseConfig {
 
 func DefaultRestfulServerConfig() *RestfulServerConfig {
 	return &RestfulServerConfig{
-		Host: "localhost",
+		Host: "0.0.0.0",
 		Port: "8080",
 	}
 }

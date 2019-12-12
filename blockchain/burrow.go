@@ -657,7 +657,7 @@ func (g *Burrow) GetTXs(height uint64) ([]Transaction, error) {
 
 		txs[i].Type = objEnvelope.Tx.Type
 		txs[i].BlockID = int64(height)
-		txs[i].Hash = tx.Hash
+		txs[i].Hash = tx.Data.Hash
 
 		if objEnvelope.Tx.Type == "CallTx" {
 
@@ -814,4 +814,39 @@ func (g *Burrow) GetNodes() ([]Peer, error) {
 	}
 
 	return env.Result.Peers, nil
+}
+
+//GetSyncInfo returns sync status of network
+func (g *Burrow) GetSyncInfo() (*StatusSyncInfo, error) {
+
+	url := fmt.Sprintf(g.Domain + "/status")
+
+	responseData := g.GetReply(url)
+
+	type Status struct {
+		ChainID       string                 `json:"ChainID"`
+		RunID         string                 `json:"RunID"`
+		BurrowVersion string                 `json:"BurrowVersion"`
+		GenesisHash   string                 `json:"GenesisHash"`
+		NodeInfo      map[string]interface{} `json:"NodeInfo"`
+		SyncInfo      StatusSyncInfo         `json:"SyncInfo"`
+		CatchingUp    bool                   `json:"CatchingUp"`
+		ValidatorInfo map[string]interface{} `json:"ValidatorInfo"`
+	}
+
+	type NetStatus struct {
+		Jsonrpc string `json:"jsonrpc"`
+		ID      string `json:"id"`
+		Result  Status `json:"result"`
+	}
+
+	//var env JsonMsg
+	var env NetStatus
+	bytes := []byte(string(responseData))
+	if err := json.Unmarshal(bytes, &env); err != nil {
+		println("error on get net status response: ", err.Error())
+		return nil, err
+	}
+
+	return &env.Result.SyncInfo, nil
 }

@@ -16,6 +16,36 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+ALTER TABLE ONLY public.transactions DROP CONSTRAINT transactions_pkey;
+ALTER TABLE ONLY public.accounts DROP CONSTRAINT accounts_pkey;
+ALTER TABLE public.transactions ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.accounts ALTER COLUMN id DROP DEFAULT;
+DROP TABLE public.useraccounts;
+DROP SEQUENCE public.useraccounts_id_seq;
+DROP SEQUENCE public.transactions_id_seq;
+DROP TABLE public.transactions;
+DROP TABLE public.blocks;
+DROP SEQUENCE public.blocks_id_seq;
+DROP SEQUENCE public.accounts_id_seq;
+DROP TABLE public.accounts;
+DROP EXTENSION plpgsql;
+DROP SCHEMA public;
+--
+-- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+CREATE SCHEMA public;
+
+
+ALTER SCHEMA public OWNER TO postgres;
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: postgres
+--
+
+COMMENT ON SCHEMA public IS 'standard public schema';
+
+
 --
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
 --
@@ -95,7 +125,8 @@ CREATE TABLE public.blocks (
     hash character varying(256),
     chainid text,
     "time" timestamp without time zone,
-    txcounts bigint
+    txcounts bigint,
+    duration bigint DEFAULT 0
 );
 
 
@@ -198,6 +229,13 @@ ALTER TABLE ONLY public.accounts
 
 ALTER TABLE ONLY public.transactions
     ADD CONSTRAINT transactions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
+--
+
+GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
 --

@@ -50,6 +50,7 @@ type Block struct {
 	Time    time.Time
 	//LastBlockHash string
 	TxCounts int64
+	Duration uint64
 }
 
 //Transaction struct
@@ -83,6 +84,16 @@ type Peer struct {
 	RemoteIP         string                 `json:"remote_ip"`
 }
 
+//StatusSyncInfo for get sync status of network
+type StatusSyncInfo struct {
+	LatestBlockHeight   uint64 `json:"LatestBlockHeight"`
+	LatestBlockHash     string `json:"LatestBlockHash"`
+	LatestAppHash       string `json:"LatestAppHash"`
+	LatestBlockTime     string `json:"LatestBlockTime"`
+	LatestBlockSeenTime string `json:"LatestBlockSeenTime"`
+	LatestBlockDuration uint64 `json:"LatestBlockDuration"`
+}
+
 //Adapter for data base
 type Adapter interface {
 	CreateClient() error
@@ -104,4 +115,6 @@ type Adapter interface {
 	GetTXs(height uint64) ([]Transaction, error)
 
 	GetNodes() ([]Peer, error)
+
+	GetSyncInfo() (*StatusSyncInfo, error) 
 }

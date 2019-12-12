@@ -41,8 +41,10 @@ func InitServer(configObject *config.Config, dbObject *db.Postgre, bcObject *bc.
 	router.HandleFunc("/api/v1/getaccount/{address}", getAccount).Methods("GET")
 	router.HandleFunc("/api/v1/getaccountalltxs/{address}", getAccountAllTxs).Methods("GET")
 	router.HandleFunc("/api/v1/getaccounttxs/{address}/{minid}/{maxid}", getAccountTxs).Methods("GET")
+	router.HandleFunc("/api/v1/getcumulativetxs/{barscount}", getCumulativeTxsCount).Methods("GET")
 	router.HandleFunc("/api/v1/nodes", getNodesStatus).Methods("GET")
 	router.HandleFunc("/api/v1/blockscount", getBlocksCount).Methods("GET")
+	router.HandleFunc("/api/v1/getdurations/{count}", getDurations).Methods("GET")
 	router.HandleFunc("/api/v1/txscount", getTxsCount).Methods("GET")
 	router.HandleFunc("/api/v1/latesttxs/{count}", getLatestTxs).Methods("GET")
 
@@ -71,11 +73,12 @@ func getHash(w http.ResponseWriter, r *http.Request) {
 	var res Response
 	res.Result = make(map[string]interface{})
 
-	tx, errGetTx := dbAdapter.GetTx(hash)
+	tx, txtime, errGetTx := dbAdapter.GetTx(hash)
 	if errGetTx != nil {
 		res.ErrorNumber = 1
 		res.ErrorDescription = "not found"
 		res.Result["height"] = "0"
+		res.Result["time"] = ""
 		json.NewEncoder(w).Encode(res)
 		return
 	}
@@ -83,6 +86,7 @@ func getHash(w http.ResponseWriter, r *http.Request) {
 	res.ErrorNumber = 0
 	res.ErrorDescription = "ok"
 	res.Result["height"] = strconv.FormatInt(tx.BlockID, 10)
+	res.Result["time"] = txtime
 
 	json.NewEncoder(w).Encode(res)
 }
@@ -252,6 +256,7 @@ func getAccountAllTxs(w http.ResponseWriter, r *http.Request) {
 		res.ErrorNumber = 1
 		res.ErrorDescription = "can't get account: " + errGetAccountTxs.Error()
 		res.Result["txs"] = ""
+		res.Result["totalcount"] = 0
 		json.NewEncoder(w).Encode(res)
 		return
 	}
@@ -260,10 +265,12 @@ func getAccountAllTxs(w http.ResponseWriter, r *http.Request) {
 		res.ErrorNumber = 0
 		res.ErrorDescription = "ok"
 		res.Result["txs"] = txs
+		res.Result["totalcount"] = len(txs)
 	} else {
 		res.ErrorNumber = 1
 		res.ErrorDescription = "Not Found!"
 		res.Result["txs"] = ""
+		res.Result["totalcount"] = 0
 	}
 
 	json.NewEncoder(w).Encode(res)
@@ -284,12 +291,13 @@ func getAccountTxs(w http.ResponseWriter, r *http.Request) {
 	var res Response
 	res.Result = make(map[string]interface{})
 
-	txs, errGetAccountTxs := dbAdapter.GetAccountTransactions(address,minID,maxID)
+	txs, totalCount, errGetAccountTxs := dbAdapter.GetAccountTransactions(address, minID, maxID)
 
 	if errGetAccountTxs != nil {
 		res.ErrorNumber = 1
 		res.ErrorDescription = "can't get account: " + errGetAccountTxs.Error()
 		res.Result["txs"] = ""
+		res.Result["totalcount"] = 0
 		json.NewEncoder(w).Encode(res)
 		return
 	}
@@ -298,13 +306,69 @@ func getAccountTxs(w http.ResponseWriter, r *http.Request) {
 		res.ErrorNumber = 0
 		res.ErrorDescription = "ok"
 		res.Result["txs"] = txs
+		res.Result["totalcount"] = totalCount
 	} else {
 		res.ErrorNumber = 1
 		res.ErrorDescription = "Not Found!"
 		res.Result["txs"] = ""
+		res.Result["totalcount"] = 0
 	}
 
 	json.NewEncoder(w).Encode(res)
+}
+
+func getCumulativeTxsCount(w http.ResponseWriter, r *http.Request) {
+
+	strBarsCount := mux.Vars(r)["barscount"]
+	ibarsCount, _ := strconv.Atoi(strBarsCount)
+	barsCount := uint64(ibarsCount)
+
+	var res Response
+	res.Result = make(map[string]interface{})
+
+	txsCountArray, errGetCumTxsCount := dbAdapter.GetCumulativeTxsCount(barsCount)
+
+	if errGetCumTxsCount != nil {
+		res.ErrorNumber = 1
+		res.ErrorDescription = "can't get cumulative number of saved txs: " + errGetCumTxsCount.Error()
+		res.Result["BlockCumulativeTxs"] = ""
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	res.ErrorNumber = 0
+	res.ErrorDescription = "ok"
+	res.Result["BlockCumulativeTxs"] = txsCountArray
+
+	json.NewEncoder(w).Encode(res)
+
+}
+
+func getDurations(w http.ResponseWriter, r *http.Request) {
+
+	strCount := mux.Vars(r)["count"]
+	iCount, _ := strconv.Atoi(strCount)
+	Count := uint64(iCount)
+
+	var res Response
+	res.Result = make(map[string]interface{})
+
+	durations, errGetDurations := dbAdapter.GetBlocksDurations(Count)
+
+	if errGetDurations != nil {
+		res.ErrorNumber = 1
+		res.ErrorDescription = "can't get durations of block: " + errGetDurations.Error()
+		res.Result["durations"] = ""
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	res.ErrorNumber = 0
+	res.ErrorDescription = "ok"
+	res.Result["durations"] = durations
+
+	json.NewEncoder(w).Encode(res)
+
 }
 
 func getTxsCount(w http.ResponseWriter, r *http.Request) {

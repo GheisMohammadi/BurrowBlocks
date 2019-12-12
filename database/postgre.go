@@ -138,20 +138,37 @@ func (obe *Postgre) GetAccountAllTransactions(address string) ([]hsBC.Transactio
 }
 
 //GetAccountTransactions finds transactions using address and min and max ID
-func (obe *Postgre) GetAccountTransactions(address string, minID uint64, maxID uint64) ([]hsBC.Transaction, error) {
+func (obe *Postgre) GetAccountTransactions(address string, minID uint64, maxID uint64) ([]hsBC.Transaction, uint64, error) {
 
-	sqlStatement :=  `SELECT * FROM 
-					 (
-					 SELECT ROW_NUMBER () OVER (ORDER BY block_id) as txid,block_id,txhash,fee,gas_limit,data,addr_from,addr_to,amount,tx_type FROM transactions 
-										  WHERE addr_from=$1 OR addr_to=$1
-					 )
-					 x WHERE txid>=$2 AND txid<=$3;`
+	sqlStatement1 := `SELECT COUNT(*) FROM 
+					(
+					SELECT ROW_NUMBER () OVER (ORDER BY block_id) as txid,block_id,txhash,fee,gas_limit,data,addr_from,addr_to,amount,tx_type FROM transactions 
+										WHERE addr_from=$1 OR addr_to=$1
+					)
+					x;`
 
-	rows, errGetTxs := obe.ObjDB.Query(sqlStatement, address, minID, maxID)
+	row := obe.ObjDB.QueryRow(sqlStatement1, address)
+	count := uint64(0)
+	err := row.Scan(&count)
+
+	if err == sql.ErrNoRows {
+		return nil, 0, fmt.Errorf("not found")
+	} else if err != nil {
+		return nil, 0, err
+	}
+
+	sqlStatement2 := `SELECT * FROM 
+					(
+					SELECT ROW_NUMBER () OVER (ORDER BY block_id) as txid,block_id,txhash,fee,gas_limit,data,addr_from,addr_to,amount,tx_type FROM transactions 
+										 WHERE addr_from=$1 OR addr_to=$1
+					)
+					x WHERE txid>=$2 AND txid<=$3;`
+
+	rows, errGetTxs := obe.ObjDB.Query(sqlStatement2, address, minID, maxID)
 	defer rows.Close()
 
 	if errGetTxs != nil {
-		return nil, errGetTxs
+		return nil, 0, errGetTxs
 	}
 
 	txs := make([]hsBC.Transaction, 0)
@@ -161,17 +178,17 @@ func (obe *Postgre) GetAccountTransactions(address string, minID uint64, maxID u
 		var id uint64
 
 		if err := rows.Scan(&id, &txn.BlockID, &txn.Hash, &txn.Fee, &txn.GasLimit, &txn.Data, &txn.From, &txn.To, &txn.Amount, &txn.Type); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		txs = append(txs, txn)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return txs, nil
+	return txs, count, nil
 }
 
 //GetAccountsTableLastID returns last block number
@@ -193,11 +210,11 @@ func (obe *Postgre) GetAccountsTableLastID() (uint64, error) {
 
 //InsertBlock add a block in database
 func (obe *Postgre) InsertBlock(b *hsBC.BlockInfo) error {
-	sqlStatement := `INSERT INTO blocks (height, hash, chainID, time, txcounts)
-	VALUES ($1, $2, $3, $4, $5)
+	sqlStatement := `INSERT INTO blocks (height, hash, chainID, time, txcounts, duration)
+	VALUES ($1, $2, $3, $4, $5, $6)
 	RETURNING height`
 	id := 0
-	row := obe.ObjDB.QueryRow(sqlStatement, b.Height, b.BlockHash, b.ChainID, b.Time, b.NumTxs)
+	row := obe.ObjDB.QueryRow(sqlStatement, b.Height, b.BlockHash, b.ChainID, b.Time, b.NumTxs, 0)
 	err := row.Scan(&id)
 	if err != nil {
 		return err
@@ -211,14 +228,30 @@ func (obe *Postgre) UpdateBlock(id int, b *hsBC.Block) error {
 	return nil
 }
 
+//UpdateBlockDuration updates block duration
+func (obe *Postgre) UpdateBlockDuration(height int64, duration uint64) error {
+	sqlStatement := `UPDATE blocks
+	SET duration = $2
+	WHERE height = $1
+	RETURNING height;`
+	var retID int
+	err := obe.ObjDB.QueryRow(sqlStatement, height, duration).Scan(&retID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 //GetBlock returns a block details
 func (obe *Postgre) GetBlock(id int) (*hsBC.Block, error) {
-	sqlStatement := `SELECT height, hash, chainID, time, txcounts FROM blocks 
+	sqlStatement := `SELECT height, hash, chainID, time, txcounts, duration FROM blocks 
 					 WHERE height=$1;`
 
 	var b hsBC.Block
 	row := obe.ObjDB.QueryRow(sqlStatement, id)
-	err := row.Scan(&b.Height, &b.Hash, &b.ChainID, &b.Time, &b.TxCounts)
+	err := row.Scan(&b.Height, &b.Hash, &b.ChainID, &b.Time, &b.TxCounts, &b.Duration)
 	if err != nil {
 		return nil, err
 	}
@@ -259,6 +292,44 @@ func (obe *Postgre) GetBlocksCount() (uint64, error) {
 	default:
 		return 0, err
 	}
+}
+
+//GetBlocksDurations returns a range of blocks
+func (obe *Postgre) GetBlocksDurations(blockscount uint64) ([]BlockTime, error) {
+
+	sqlStatement := `SELECT * FROM 
+	(
+		SELECT height, duration FROM blocks
+		WHERE height>0
+		ORDER BY height DESC
+		LIMIT $1
+	) tblDurations
+	ORDER BY height ASC
+	;`
+
+	rows, errGetDurations := obe.ObjDB.Query(sqlStatement, blockscount)
+	defer rows.Close()
+
+	if errGetDurations != nil {
+		return nil, errGetDurations
+	}
+
+	durations := make([]BlockTime, 0)
+	for rows.Next() {
+
+		var b BlockTime
+		if err := rows.Scan(&b.Height, &b.Duration); err != nil {
+			return nil, err
+		}
+
+		durations = append(durations, b)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return durations, nil
 }
 
 //InsertTx add a transaction in database
@@ -308,17 +379,18 @@ func (obe *Postgre) UpdateTx(id int, b *hsBC.Transaction) error {
 }
 
 //GetTx returns a transaction data
-func (obe *Postgre) GetTx(hash string) (*hsBC.Transaction, error) {
-	sqlStatement := `SELECT block_id,txhash,fee,gas_limit,data,addr_from,addr_to,amount,tx_type FROM transactions
+func (obe *Postgre) GetTx(hash string) (*hsBC.Transaction, string, error) {
+	sqlStatement := `SELECT block_id,(SELECT time from blocks WHERE blocks.height=transactions.block_id) as txtime,txhash,fee,gas_limit,data,addr_from,addr_to,amount,tx_type FROM transactions
 					 WHERE txhash=$1;`
 	var tx hsBC.Transaction
-	errGetTx := obe.ObjDB.QueryRow(sqlStatement, hash).Scan(&tx.BlockID, &tx.Hash, &tx.Fee, &tx.GasLimit, &tx.Data, &tx.From, &tx.To, &tx.Amount, &tx.Type)
+	var txtime string
+	errGetTx := obe.ObjDB.QueryRow(sqlStatement, hash).Scan(&tx.BlockID, &txtime, &tx.Hash, &tx.Fee, &tx.GasLimit, &tx.Data, &tx.From, &tx.To, &tx.Amount, &tx.Type)
 
 	if errGetTx != nil {
-		return nil, errGetTx
+		return nil, "", errGetTx
 	}
 
-	return &tx, nil
+	return &tx, txtime, nil
 }
 
 //GetTXsTableLastID returns last saved transaction number
@@ -336,6 +408,52 @@ func (obe *Postgre) GetTXsTableLastID() (uint64, error) {
 	default:
 		return 0, err
 	}
+}
+
+//GetCumulativeTxsCount returns cumulative txs count
+func (obe *Postgre) GetCumulativeTxsCount(barscount uint64) ([]CumBlock, error) {
+
+	sqlStatement := `
+	SELECT * FROM
+	(
+	SELECT * FROM 
+	(
+		SELECT
+			height,
+			sum(txcounts) over (order by height asc rows between unbounded preceding and current row)
+		FROM blocks
+		WHERE txcounts>0
+	) tblCumulativeTxsCount
+	WHERE tblCumulativeTxsCount.sum>0
+	ORDER BY tblCumulativeTxsCount.height DESC
+	LIMIT $1
+	) tblResult
+	ORDER BY tblResult.height ASC
+	`
+
+	rows, errGetTxsCount := obe.ObjDB.Query(sqlStatement, barscount)
+	defer rows.Close()
+
+	if errGetTxsCount != nil {
+		return nil, errGetTxsCount
+	}
+
+	txscount := make([]CumBlock, 0)
+	for rows.Next() {
+
+		var b CumBlock
+		if err := rows.Scan(&b.Height, &b.TxsCount); err != nil {
+			return nil, err
+		}
+
+		txscount = append(txscount, b)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return txscount, nil
 }
 
 //GetTxsCount returns num transaction saved in db

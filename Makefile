@@ -42,8 +42,8 @@ tools:
 ########################################
 
 deploy:
-	sshpass -p "kk.53*(F&-\d(BN<" scp /home/gheis/goApps/src/github.com/BurrowBlocks/BurrowBlocks  root@178.128.124.224:~/burrowblocksapi/burrowblocks
-	sshpass -p "kk.53*(F&-\d(BN<" scp /home/gheis/goApps/src/github.com/BurrowBlocks/config.toml  root@178.128.124.224:~/burrowblocksapi/config.toml
+	sshpass -p "jmZRUXQm.\`f_H9R~" scp /home/gheis/goApps/src/github.com/BurrowBlocks/BurrowBlocks  root@104.248.149.130:~/burrowblocks/burrowblocks
+	sshpass -p "jmZRUXQm.\`f_H9R~" scp /home/gheis/goApps/src/github.com/BurrowBlocks/config.toml  root@104.248.149.130:~/burrowblocks/config.toml
 
 ### Formatting, linting, and vetting
 fmt:

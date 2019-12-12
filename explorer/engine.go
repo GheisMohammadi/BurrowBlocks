@@ -145,6 +145,23 @@ func (e *Explorer) saveBlocksInDB(blocks []bc.BlockInfo, bcAdapter bc.Adapter, d
 			}
 		}
 	}
+
+	syncInfo, errGetSyncInfo := bcAdapter.GetSyncInfo()
+	if errGetSyncInfo != nil {
+		println("error on get sync info: " + errGetSyncInfo.Error())
+		return errGetSyncInfo
+	}
+
+	blockID := int64(syncInfo.LatestBlockHeight)
+	if blockID==blocks[l-1].Height {
+		duration := syncInfo.LatestBlockDuration
+		errUpdateDuration := dbAdapter.UpdateBlockDuration(blockID, duration)
+		if errUpdateDuration != nil {
+			println("error on update block duration: " + errUpdateDuration.Error())
+			return errUpdateDuration
+		}
+	}
+
 	return nil
 }
 
